@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 
@@ -44,6 +45,10 @@ func main() {
 		c.File("./web/dist/index.html")
 	})
 
-	log.Println("Server starting on :8080")
-	r.Run(":8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Server starting on :%s", port)
+	r.Run(":" + port)
 }

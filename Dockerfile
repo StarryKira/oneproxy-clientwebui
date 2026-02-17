@@ -17,5 +17,6 @@ FROM alpine:3.21
 RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
 COPY --from=backend /app/server .
+COPY --from=frontend /app/web/dist ./web/dist
 EXPOSE 8080
 CMD ["./server"]
