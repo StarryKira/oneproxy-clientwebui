@@ -1,0 +1,9 @@
+services:
+  oneproxy:
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.json:/app/config.json
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai

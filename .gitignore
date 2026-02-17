@@ -1,0 +1,4 @@
+config.json
+web/node_modules/
+web/dist/
+.idea/
