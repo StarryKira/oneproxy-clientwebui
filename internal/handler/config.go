@@ -1,17 +1,55 @@
 package handler
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"oneproxy-clientwebui/internal/config"
 )
 
+type session struct {
+	createdAt time.Time
+}
+
+var (
+	sessions   = make(map[string]session)
+	sessionsMu sync.RWMutex
+	sessionTTL = 2 * time.Hour
+)
+
+func generateToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
+
 func AdminAuth(c *gin.Context) {
-	password := c.GetHeader("X-Admin-Password")
-	if !config.CheckPassword(password) {
-		c.JSON(http.StatusUnauthorized, gin.H{"code": false, "message": "密码错误"})
+	token := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": false, "message": "未登录"})
+		c.Abort()
+		return
+	}
+
+	sessionsMu.RLock()
+	s, ok := sessions[token]
+	sessionsMu.RUnlock()
+
+	if !ok || time.Since(s.createdAt) > sessionTTL {
+		if ok {
+			sessionsMu.Lock()
+			delete(sessions, token)
+			sessionsMu.Unlock()
+		}
+		c.JSON(http.StatusUnauthorized, gin.H{"code": false, "message": "会话已过期，请重新登录"})
 		c.Abort()
 		return
 	}
@@ -61,5 +99,16 @@ func AdminLogin(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"code": false, "message": "密码错误"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": true, "message": "ok"})
+
+	token, err := generateToken()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": false, "message": "生成会话失败"})
+		return
+	}
+
+	sessionsMu.Lock()
+	sessions[token] = session{createdAt: time.Now()}
+	sessionsMu.Unlock()
+
+	c.JSON(http.StatusOK, gin.H{"code": true, "message": "ok", "token": token})
 }

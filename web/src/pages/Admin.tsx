@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button, Form, Input, InputNumber, message, Spin, Tooltip, Typography } from 'antd'
 import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons'
-import { adminLogin, getConfig, setAdminPassword, updateConfig, type AppConfig } from '../api'
+import { adminLogin, getConfig, setSessionToken, updateConfig, type AppConfig } from '../api'
 
 const { Title } = Typography
 
@@ -16,8 +16,8 @@ export default function Admin() {
     setLoginLoading(true)
     try {
       const res = await adminLogin(values.password)
-      if (res.data.code) {
-        setAdminPassword(values.password)
+      if (res.data.code && res.data.token) {
+        setSessionToken(res.data.token)
         setAuthed(true)
         setLoading(true)
         getConfig()

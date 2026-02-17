@@ -2,8 +2,8 @@ import axios from 'axios'
 
 const http = axios.create({ baseURL: '/' })
 
-export function setAdminPassword(password: string) {
-  http.defaults.headers.common['X-Admin-Password'] = password
+export function setSessionToken(token: string) {
+  http.defaults.headers.common['Authorization'] = `Bearer ${token}`
 }
 
 export interface UsageData {
@@ -30,14 +30,14 @@ export interface UsageResult {
 export interface AppConfig {
   api_base_url: string
   exchange_rate: number
-  admin_password: string
+  admin_password?: string
 }
 
 export const queryUsage = (key: string) =>
   http.get<UsageResult>('/api/usage/query', { params: { key } })
 
 export const adminLogin = (password: string) =>
-  http.post<{ code: boolean; message: string }>('/api/admin/login', { password })
+  http.post<{ code: boolean; message: string; token?: string }>('/api/admin/login', { password })
 
 export const getConfig = () =>
   http.get<AppConfig>('/api/config')
